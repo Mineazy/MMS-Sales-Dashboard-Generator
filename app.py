@@ -104,7 +104,7 @@ st.markdown("---")
 
 # ========== DATA PROCESSING FUNCTIONS ==========
 def process_sales_file(uploaded_file):
-    r"""Reads the sales Excel, cleans Sales Rep Number (replace / and \ with ;, then convert to int)."""
+    r"""Reads the sales Excel, cleans Sales Rep Number (replace / and \ with ;, then preserve as text)."""
     try:
         df = pd.read_excel(uploaded_file)
         df['Amount'] = pd.to_numeric(df['Amount'], errors='coerce')
@@ -125,8 +125,7 @@ def process_sales_file(uploaded_file):
         # Convert to numeric, coercing errors to NaN
         df_exploded['Sales Rep Number'] = pd.to_numeric(df_exploded['Sales Rep Number'], errors='coerce')
         df_exploded = df_exploded.dropna(subset=['Sales Rep Number'])
-        # Convert to integer
-        df_exploded['Sales Rep Number'] = df_exploded['Sales Rep Number'].astype(int)
+        # Keep rep numbers numeric so decimal-like values such as 20.3 are accepted.
         df_exploded['Split Amount'] = df_exploded['Amount'] / df_exploded['rep_count']
         return df_original, df_exploded
     except Exception as e:
@@ -134,7 +133,7 @@ def process_sales_file(uploaded_file):
         return None, None
 
 def process_deductions_file(uploaded_file):
-    r"""Reads the deductions Excel, cleans Sales Rep Number (replace / and \ with ;, then convert to int)."""
+    r"""Reads the deductions Excel, cleans Sales Rep Number (replace / and \ with ;, then preserve as text)."""
     try:
         df = pd.read_excel(uploaded_file)
         required_cols = ['Date', 'Sales Rep Number', 'Points Deducted', 'Invoice Number', 'Amount Deducted']
@@ -159,8 +158,7 @@ def process_deductions_file(uploaded_file):
         # Convert to numeric, coercing errors to NaN
         df_exploded['Sales Rep Number'] = pd.to_numeric(df_exploded['Sales Rep Number'], errors='coerce')
         df_exploded = df_exploded.dropna(subset=['Sales Rep Number'])
-        # Convert to integer
-        df_exploded['Sales Rep Number'] = df_exploded['Sales Rep Number'].astype(int)
+        # Keep rep numbers numeric so decimal-like values such as 20.3 are accepted.
         # Split points and amount equally among reps
         df_exploded['Points Deducted'] = df_exploded['Points Deducted'] / df_exploded['rep_count']
         df_exploded['Amount Deducted'] = df_exploded['Amount Deducted'] / df_exploded['rep_count']
@@ -475,7 +473,7 @@ st.markdown("---")
 st.subheader("📋 Sales Rep Summary (Sorted by Net Sales)")
 if not rep_stats_net_sales.empty:
     display_df = rep_stats_net_sales[['Sales Rep Number', 'net_points', 'net_sales']].copy()
-    display_df['Sales Rep Number'] = display_df['Sales Rep Number'].astype(int)
+    display_df['Sales Rep Number'] = display_df['Sales Rep Number'].astype(str)
     display_df['net_sales'] = display_df['net_sales'].map('${:,.2f}'.format)
     display_df.columns = ['Sales Rep', 'Net Points', 'Net Sales']
     st.dataframe(
@@ -483,7 +481,7 @@ if not rep_stats_net_sales.empty:
         width='stretch',
         hide_index=True,
         column_config={
-            "Sales Rep": st.column_config.NumberColumn("Sales Rep", format="%d"),
+            "Sales Rep": st.column_config.TextColumn("Sales Rep"),
             "Net Points": st.column_config.NumberColumn("Net Points", format="%d"),
             "Net Sales": st.column_config.TextColumn("Net Sales"),
         }
@@ -552,7 +550,7 @@ if has_deductions and not df_ded_exp_filtered.empty:
     with col_ded1:
         st.subheader("Points Deductions by Sales Rep")
         ded_display = ded_rep_stats[['Sales Rep Number', 'total_points_deducted', 'total_amount_deducted']].copy()
-        ded_display['Sales Rep Number'] = ded_display['Sales Rep Number'].astype(int)
+        ded_display['Sales Rep Number'] = ded_display['Sales Rep Number'].astype(str)
         ded_display['total_amount_deducted'] = ded_display['total_amount_deducted'].map('${:,.2f}'.format)
         ded_display.columns = ['Sales Rep', 'Points Deducted', 'Amount Deducted']
         st.dataframe(
@@ -560,7 +558,7 @@ if has_deductions and not df_ded_exp_filtered.empty:
             width='stretch',
             hide_index=True,
             column_config={
-                "Sales Rep": st.column_config.NumberColumn("Sales Rep", format="%d"),
+                "Sales Rep": st.column_config.TextColumn("Sales Rep"),
                 "Points Deducted": st.column_config.NumberColumn("Points Deducted", format="%d"),
                 "Amount Deducted": st.column_config.TextColumn("Amount Deducted"),
             }

@@ -104,7 +104,7 @@ st.markdown("---")
 
 # ========== DATA PROCESSING FUNCTIONS (UPDATED) ==========
 def process_sales_file(uploaded_file):
-    r"""Reads the sales Excel, cleans Sales Rep Number (replace / and \ with ;, then convert to int)."""
+    r"""Reads the sales Excel, cleans Sales Rep Number (replace / and \ with ;, then preserve as text)."""
     try:
         df = pd.read_excel(uploaded_file)
         df['Amount'] = pd.to_numeric(df['Amount'], errors='coerce')
@@ -120,10 +120,9 @@ def process_sales_file(uploaded_file):
         df_exploded['rep_count'] = df_exploded['Sales Rep Number'].str.split(';').apply(len)
         df_exploded['Sales Rep Number'] = df_exploded['Sales Rep Number'].str.split(';')
         df_exploded = df_exploded.explode('Sales Rep Number')
-        df_exploded['Sales Rep Number'] = df_exploded['Sales Rep Number'].str.strip()
+        df_exploded['Sales Rep Number'] = df_exploded['Sales Rep Number'].astype(str).str.strip()
         df_exploded = df_exploded[df_exploded['Sales Rep Number'] != '']
-        # Convert to integer
-        df_exploded['Sales Rep Number'] = df_exploded['Sales Rep Number'].astype(int)
+        # Keep rep numbers as text so decimal-like values such as 20.3 are accepted.
         df_exploded['Split Amount'] = df_exploded['Amount'] / df_exploded['rep_count']
         return df_original, df_exploded
     except Exception as e:
@@ -131,7 +130,7 @@ def process_sales_file(uploaded_file):
         return None, None
 
 def process_deductions_file(uploaded_file):
-    r"""Reads the deductions Excel, cleans Sales Rep Number (replace / and \ with ;, then convert to int)."""
+    r"""Reads the deductions Excel, cleans Sales Rep Number (replace / and \ with ;, then preserve as text)."""
     try:
         df = pd.read_excel(uploaded_file)
         required_cols = ['Date', 'Sales Rep Number', 'Points Deducted', 'Invoice Number', 'Amount Deducted']
@@ -151,10 +150,9 @@ def process_deductions_file(uploaded_file):
         df_exploded['rep_count'] = df_exploded['Sales Rep Number'].str.split(';').apply(len)
         df_exploded['Sales Rep Number'] = df_exploded['Sales Rep Number'].str.split(';')
         df_exploded = df_exploded.explode('Sales Rep Number')
-        df_exploded['Sales Rep Number'] = df_exploded['Sales Rep Number'].str.strip()
+        df_exploded['Sales Rep Number'] = df_exploded['Sales Rep Number'].astype(str).str.strip()
         df_exploded = df_exploded[df_exploded['Sales Rep Number'] != '']
-        # Convert to integer
-        df_exploded['Sales Rep Number'] = df_exploded['Sales Rep Number'].astype(int)
+        # Keep rep numbers as text so decimal-like values such as 20.3 are accepted.
         # Split points and amount equally among reps
         df_exploded['Points Deducted'] = df_exploded['Points Deducted'] / df_exploded['rep_count']
         df_exploded['Amount Deducted'] = df_exploded['Amount Deducted'] / df_exploded['rep_count']
@@ -442,7 +440,7 @@ if not rep_stats_net_sales.empty:
         width='stretch',
         hide_index=True,
         column_config={
-            "Sales Rep": st.column_config.NumberColumn("Sales Rep", format="%d"),
+            "Sales Rep": st.column_config.TextColumn("Sales Rep"),
             "Net Points": st.column_config.NumberColumn("Net Points", format="%d"),
             "Net Sales": st.column_config.TextColumn("Net Sales"),
         }
@@ -486,7 +484,7 @@ if has_deductions and not df_ded_exp_filtered.empty:
             width='stretch',
             hide_index=True,
             column_config={
-                "Sales Rep": st.column_config.NumberColumn("Sales Rep", format="%d"),
+                "Sales Rep": st.column_config.TextColumn("Sales Rep"),
                 "Points Deducted": st.column_config.NumberColumn("Points Deducted", format="%d"),
                 "Amount Deducted": st.column_config.TextColumn("Amount Deducted"),
             }
